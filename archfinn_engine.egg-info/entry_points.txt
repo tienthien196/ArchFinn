@@ -1,2 +1,3 @@
 [console_scripts]
 archfinn = archfinn.cli.main:main
+archfinn-studio = archfinn_studio.main:main

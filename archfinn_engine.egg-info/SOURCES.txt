@@ -17,3 +17,5 @@ archfinn_engine.egg-info/dependency_links.txt
 archfinn_engine.egg-info/entry_points.txt
 archfinn_engine.egg-info/requires.txt
 archfinn_engine.egg-info/top_level.txt
+archfinn_studio/__init__.py
+archfinn_studio/main.py

@@ -16,7 +16,7 @@ EXTENSIONS = {
 
 # Các thư mục nên bỏ qua
 SKIP_DIRS = {
-    '__pycache__', '.git', 'node_modules', '.vscode', '.idea', 'venv', 'env', 'v3.1'
+    '__pycache__', '.git', 'node_modules', '.vscode', '.idea', 'venv', 'env', 'v3.1', 'tool'
 }
 
 def should_include_file(filepath):

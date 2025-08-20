@@ -1,4 +1,3 @@
-# pyproject.toml
 [build-system]
 requires = ["setuptools", "wheel", "lark"]
 build-backend = "setuptools.build_meta"
@@ -6,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "archfinn-engine"
 version = "0.1.0"
-description = "ArchFinn Script Engine - Mô phỏng mọi kiến trúc"
+description = "ArchFinn Script Engine + Studio"
 authors = [{name = "ArchFinn Team"}]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -16,8 +15,14 @@ dependencies = [
     "numpy",
     "pandas",
     "fastapi",
-    "streamlit"
+    "streamlit",
+    "PySide6",
+    "matplotlib"
 ]
 
 [project.scripts]
 archfinn = "archfinn.cli.main:main"
+archfinn-studio = "archfinn_studio.main:main"
+
+[tool.setuptools]
+packages = ["archfinn", "archfinn_studio"]
