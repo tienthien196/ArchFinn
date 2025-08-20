@@ -1,0 +1,35 @@
+ARCHFINN "v1.0"
+
+SIMULATION "Test Attack Path" {
+    timeline = {
+        max_steps = 10,
+        tick_delay = 1.0
+    }
+
+    STEP S1 {
+        action = exploit
+        target = webserver
+        type = sql_injection
+        base_success = 0.6
+        on_success = goto:S2
+        on_fail = end:blocked
+    }
+
+    STEP S2 {
+        action = move_lateral
+        from = webserver
+        to = dbserver
+        type = ssh
+        base_success = 0.4
+        on_success = goto:S3
+        on_fail = end:stopped
+    }
+
+    STEP S3 {
+        action = exfiltrate
+        detect_prob = 0.5
+        data_volume = 500
+        on_success = end:exfil_success
+        on_detect = end:alert_triggered
+    }
+}

@@ -1,0 +1,1080 @@
+=== DUMP CODE TỪ: E:\DOCS\NoteBook\ArchFin_Engine ===
+Chỉ dump các file: .afinn, .c, .cfg, .conf, .cpp, .css, .go, .h, .hpp, .html, .ini, .java, .js, .json, .lark, .md, .py, .rs, .toml, .ts, .txt, .yaml, .yml
+================================================================================
+
+--- FILE: main.py ---
+# dump_code.py
+import os
+
+# Cấu hình
+ROOT_DIR = r"E:\DOCS\NoteBook\ArchFin_Engine"
+OUTPUT_FILE = r"E:\DOCS\NoteBook\ArchFin_Engine\out.txt"
+
+# Các đuôi file cần dump (có thể mở rộng)
+EXTENSIONS = {
+    '.py', '.lark', '.afinn', '.txt', '.md',
+    '.json', '.yaml', '.yml', '.toml',
+    '.ini', '.cfg', '.conf',
+    '.html', '.css', '.js', '.ts',
+    '.c', '.cpp', '.h', '.hpp', '.go', '.java', '.rs'
+}
+
+# Các thư mục nên bỏ qua
+SKIP_DIRS = {
+    '__pycache__', '.git', 'node_modules', '.vscode', '.idea', 'venv', 'env', 'v3.1'
+}
+
+def should_include_file(filepath):
+    """Kiểm tra file có nên được dump không"""
+    _, ext = os.path.splitext(filepath)
+    return ext.lower() in EXTENSIONS
+
+def is_binary(filepath):
+    """Kiểm tra file có phải binary không"""
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            f.read(1024)
+        return False
+    except UnicodeDecodeError:
+        return True
+    except Exception:
+        return True  # nếu lỗi, bỏ qua
+
+def dump_code():
+    with open(OUTPUT_FILE, 'w', encoding='utf-8') as out:
+        out.write(f"=== DUMP CODE TỪ: {ROOT_DIR} ===\n")
+        out.write(f"Chỉ dump các file: {', '.join(sorted(EXTENSIONS))}\n")
+        out.write("=" * 80 + "\n\n")
+
+        for root, dirs, files in os.walk(ROOT_DIR):
+            # Lọc các thư mục cần bỏ qua
+            dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+
+            for file in files:
+                filepath = os.path.join(root, file)
+                relpath = os.path.relpath(filepath, ROOT_DIR)
+
+                if should_include_file(filepath):
+                    if is_binary(filepath):
+                        print(f"[SKIP] Binary file: {relpath}")
+                        continue
+
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        out.write(f"--- FILE: {relpath} ---\n")
+                        out.write(content)
+                        out.write("\n" + "="*80 + "\n\n")
+                        print(f"[OK] Dumped: {relpath}")
+                    except Exception as e:
+                        print(f"[ERROR] Đọc file {relpath} thất bại: {e}")
+                        out.write(f"[ERROR] Không thể đọc file: {relpath}\n\n")
+
+    print(f"\n✅ Đã xuất toàn bộ code vào: {OUTPUT_FILE}")
+
+if __name__ == "__main__":
+    dump_code()
+================================================================================
+
+--- FILE: out.txt ---
+
+================================================================================
+
+--- FILE: pyproject.toml ---
+# pyproject.toml
+[build-system]
+requires = ["setuptools", "wheel", "lark"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "archfinn-engine"
+version = "0.1.0"
+description = "ArchFinn Script Engine - Mô phỏng mọi kiến trúc"
+authors = [{name = "ArchFinn Team"}]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "lark",
+    "networkx",
+    "numpy",
+    "pandas",
+    "fastapi",
+    "streamlit"
+]
+
+[project.scripts]
+archfinn = "archfinn.cli.main:main"
+================================================================================
+
+--- FILE: README.md ---
+
+================================================================================
+
+--- FILE: test.afinn ---
+ARCHFINN "v1.0"
+
+SIMULATION "Test Attack Path" {
+    timeline = {
+        max_steps = 10,
+        tick_delay = 1.0
+    }
+
+    STEP S1 {
+        action = exploit
+        target = webserver
+        type = sql_injection
+        base_success = 0.6
+        on_success = goto:S2
+        on_fail = end:blocked
+    }
+
+    STEP S2 {
+        action = move_lateral
+        from = webserver
+        to = dbserver
+        type = ssh
+        base_success = 0.4
+        on_success = goto:S3
+        on_fail = end:stopped
+    }
+
+    STEP S3 {
+        action = exfiltrate
+        detect_prob = 0.5
+        data_volume = 500
+        on_success = end:exfil_success
+        on_detect = end:alert_triggered
+    }
+}
+================================================================================
+
+--- FILE: archfinn\__init__.py ---
+# archfinn/__init__.py
+"""
+ArchFinn Script Engine – Where Ideas Become Architectures.
+"""
+from .sdk.api import load, run, export
+
+
+
+__version__ = "0.1.0"
+__author__ = "ArchFinn Team"
+
+================================================================================
+
+--- FILE: archfinn\cli\main.py ---
+# archfinn/cli/main.py
+import argparse
+import sys
+import traceback
+from pathlib import Path
+from archfinn.parser.parser import parse_file
+from archfinn.core.engine import ArchState, run_scenario
+
+
+def print_banner():
+    print(r"""
+    █████╗  ██████╗  ██████╗██╗  ██╗███████╗██╗███╗   ██╗███╗   ██╗
+    ██╔══██╗██╔══██╗██╔════╝██║  ██║██╔════╝██║████╗  ██║████╗  ██║
+    ███████║██████╔╝██║     ███████║█████╗  ██║██╔██╗ ██║██╔██╗ ██║
+    ██╔══██║██╔══██╗██║     ██╔══██║██╔══╝  ██║██║╚██╗██║██║╚██╗██║
+    ██║  ██║██║  ██║╚██████╗██║  ██║██║     ██║██║ ╚████║██║ ╚████║
+    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝
+    
+    🚀 Where Ideas Become Architectures
+    """)
+
+
+def validate_file(file_path: str) -> Path:
+    """Validate input file exists and has correct extension"""
+    path = Path(file_path)
+    
+    if not path.exists():
+        print(f"❌ File not found: {file_path}")
+        sys.exit(1)
+    
+    if not path.suffix.lower() == '.afinn':
+        print(f"⚠️  Warning: Expected .afinn extension, got {path.suffix}")
+    
+    return path
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="ArchFinn Script Engine - Architecture Simulation Framework",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  archfinn scenario.afinn              # Run first scenario in file
+  archfinn scenario.afinn --debug      # Run with debug output
+  archfinn scenario.afinn --seed 42    # Run with custom random seed
+        """
+    )
+    
+    parser.add_argument("file", help="Path to .afinn scenario file")
+    parser.add_argument("--scenario", "-s", help="Specific scenario name to run")
+    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug output")
+    parser.add_argument("--seed", type=int, default=1337, help="Random seed for simulation")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Suppress banner and extra output")
+    
+    args = parser.parse_args()
+
+    # Validate input file
+    file_path = validate_file(args.file)
+    
+    if not args.quiet:
+        print_banner()
+        print(f"📁 Loading scenario: {file_path.name}")
+
+    # Parse the scenario file
+    try:
+        ast = parse_file(str(file_path))
+        if args.debug:
+            print(f"🔍 Debug: Parsed AST type: {type(ast)}")
+            
+    except Exception as e:
+        print(f"❌ Parse error: {e}")
+        if args.debug:
+            print("\n🔍 Debug traceback:")
+            traceback.print_exc()
+        sys.exit(1)
+
+    if ast is None:
+        print("❌ Parse failed: AST is None")
+        sys.exit(1)
+
+    # Find target scenario
+    scenarios = ast if isinstance(ast, list) else [ast]
+    scenario = None
+    
+    if args.scenario:
+        # Look for specific scenario by name
+        for item in scenarios:
+            if hasattr(item, "name") and item.name == args.scenario:
+                scenario = item
+                break
+        if not scenario:
+            available = [item.name for item in scenarios if hasattr(item, "name")]
+            print(f"❌ Scenario '{args.scenario}' not found.")
+            print(f"Available scenarios: {', '.join(available)}")
+            sys.exit(1)
+    else:
+        # Use first valid scenario
+        for item in scenarios:
+            if hasattr(item, "name"):
+                scenario = item
+                break
+
+    if scenario is None:
+        print("❌ No valid scenario found in file.")
+        print("Make sure your file contains a SCENARIO or SIMULATION block.")
+        sys.exit(1)
+
+    if not args.quiet:
+        print(f"🎯 Running scenario: {scenario.name}")
+        print(f"🎲 Random seed: {args.seed}")
+        print("─" * 60)
+
+    # Initialize and run simulation
+    try:
+        state = ArchState(nodes={}, edges=[], controls={})
+        state.rng.seed(args.seed)
+        
+        result = run_scenario(state, scenario)
+        
+        # Print results
+        if not args.quiet:
+            print("─" * 60)
+            print(f"📊 Simulation completed in {state.tick} steps")
+            print(f"🎯 Final result: {result['result'].upper()}")
+            
+            if result.get('events'):
+                print(f"⚠️  Events triggered: {', '.join(result['events'])}")
+        else:
+            # Quiet mode: just print essential info
+            print(f"RESULT: {result['result']}")
+            if result.get('events'):
+                print(f"EVENTS: {','.join(result['events'])}")
+
+    except Exception as e:
+        print(f"❌ Runtime error: {e}")
+        if args.debug:
+            print("\n🔍 Debug traceback:")
+            traceback.print_exc()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+
+--- FILE: archfinn\core\engine.py ---
+# archfinn/core/engine.py
+import random
+import time
+from typing import Dict, Any, Optional, List
+from ..parser.ast import Scenario, ScenarioStep
+from dataclasses import dataclass, field
+
+@dataclass
+class ArchState:
+    nodes: Dict[str, Any]
+    edges: list
+    controls: Dict[str, Any]
+    events: list = field(default_factory=list)
+    logs: list = field(default_factory=list)
+    tick: int = 0
+    rng: random.Random = field(default_factory=lambda: random.Random(1337))
+
+    def log(self, msg: str):
+        timestamp = f"[t={self.tick:02d}]"
+        self.logs.append(f"{timestamp} {msg}")
+        print(f"{timestamp} {msg}")  # Real-time output
+
+    def eff_node(self, node_id: str, kind: str) -> float:
+        """Calculate control effectiveness for a node"""
+        node = self.nodes.get(node_id)
+        if not node or not hasattr(node, 'controls'):
+            return 0.0
+        prod = 1.0
+        for ctrl in node.controls:
+            eff = self.controls.get(ctrl, {}).get("effectiveness", {}).get(kind, 0.0)
+            prod *= (1.0 - eff)
+        return 1.0 - prod
+
+def eval_prob(state: ArchState, kind: str, *, target=None, path=None, base_p=0.5, context=1.0) -> float:
+    """Evaluate success probability based on controls and context"""
+    if path:
+        p_block = 1.0
+        for nid in path:
+            p_block *= (1.0 - state.eff_node(nid, kind))
+    elif target:
+        p_block = state.eff_node(target, kind)
+    else:
+        p_block = 0.0
+    return max(0.0, min(1.0, base_p * (1.0 - p_block) * context))
+
+def run_scenario(state: ArchState, scenario: Scenario) -> Dict[str, Any]:
+    """Run a scenario simulation with improved logging and error handling"""
+    if not scenario.steps:
+        return {"result": "no_steps", "logs": ["❌ No steps found in scenario"], "events": []}
+    
+    steps = {s.id: s for s in scenario.steps}
+    current = scenario.steps[0].id
+    max_steps = scenario.timeline.get("max_steps", 20)
+    tick_delay = scenario.timeline.get("tick_delay", 0.5)
+    
+    state.log(f"🚀 Running scenario: {scenario.name}")
+    state.log(f"📊 Timeline: max_steps={max_steps}, tick_delay={tick_delay}s")
+    state.log(f"🎯 Starting from step: {current}")
+
+    for iteration in range(max_steps):
+        step = steps.get(current)
+        if not step:
+            state.log(f"❌ Step not found: {current}")
+            break
+
+        state.tick += 1
+        action = step.action
+        params = step.params
+        
+        state.log(f"⚡ Executing step {step.id}: {action}")
+        
+        # Add realistic delay
+        if tick_delay > 0:
+            time.sleep(tick_delay)
+
+        # Handle different actions
+        if action == "exploit":
+            target = params.get("target", "unknown")
+            exploit_type = params.get("type", "generic")
+            base_success = params.get("base_success", 0.5)
+            
+            p = eval_prob(state, exploit_type, target=target, base_p=base_success)
+            success = state.rng.random() < p
+            
+            emoji = "✅" if success else "❌"
+            state.log(f"🎯 Exploit {target} via {exploit_type}: p={p:.2f} → {emoji}")
+            
+            next_key = "on_success" if success else "on_fail"
+            next_val = params.get(next_key)
+            
+            if next_val and isinstance(next_val, tuple):
+                jump_type, label = next_val
+                if jump_type == "goto":
+                    current = label
+                    continue
+                elif jump_type == "end":
+                    state.log(f"🏁 END: {label.upper()}")
+                    return {"result": label, "logs": state.logs, "events": state.events}
+
+        elif action == "move_lateral":
+            from_node = params.get("from", "unknown")
+            to_node = params.get("to", "unknown")
+            move_type = params.get("type", "generic")
+            base_success = params.get("base_success", 0.5)
+            
+            path = [from_node, to_node]
+            p = eval_prob(state, move_type, path=path, base_p=base_success)
+            success = state.rng.random() < p
+            
+            emoji = "✅" if success else "❌"
+            state.log(f"➡️  Lateral {from_node}→{to_node} via {move_type}: p={p:.2f} → {emoji}")
+            
+            next_key = "on_success" if success else "on_fail"
+            next_val = params.get(next_key)
+            
+            if next_val and isinstance(next_val, tuple):
+                jump_type, label = next_val
+                if jump_type == "goto":
+                    current = label
+                    continue
+                elif jump_type == "end":
+                    state.log(f"🏁 END: {label.upper()}")
+                    return {"result": label, "logs": state.logs, "events": state.events}
+
+        elif action == "exfiltrate":
+            detect_prob = params.get("detect_prob", 0.0)
+            data_volume = params.get("data_volume", 0)
+            
+            detected = state.rng.random() < detect_prob
+            
+            if detected:
+                state.events.append("ALERT.EXFIL")
+                state.log(f"🚨 Exfiltration detected! ({data_volume} MB)")
+                next_val = params.get("on_detect")
+                if next_val and isinstance(next_val, tuple):
+                    jump_type, label = next_val
+                    if jump_type == "end":
+                        state.log(f"🏁 END: {label.upper()}")
+                        return {"result": label, "logs": state.logs, "events": state.events}
+            else:
+                state.log(f"💾 Exfiltrating {data_volume} MB... undetected")
+                next_val = params.get("on_success")
+                if next_val and isinstance(next_val, tuple):
+                    jump_type, label = next_val
+                    if jump_type == "goto":
+                        current = label
+                        continue
+                    elif jump_type == "end":
+                        state.log(f"🏁 END: {label.upper()}")
+                        return {"result": label, "logs": state.logs, "events": state.events}
+
+        else:
+            state.log(f"⚠️  Unknown action: {action}")
+            return {"result": "unknown_action", "logs": state.logs, "events": state.events}
+
+        # Nếu không có jump hợp lệ, kết thúc
+        state.log("❌ No valid transition found, ending scenario")
+        break
+
+    state.log(f"⏰ Maximum steps ({max_steps}) reached")
+    return {"result": "max_steps", "logs": state.logs, "events": state.events}
+================================================================================
+
+--- FILE: archfinn\core\model.py ---
+# archfinn/core/model.py
+from dataclasses import dataclass, field
+from typing import Dict, List, Any
+from typing import Optional
+
+@dataclass
+class Node:
+    id: str
+    type: str
+    state: str
+    controls: List[str] = field(default_factory=list)
+    attrs: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class Edge:
+    from_id: str
+    to_id: str
+    protocol: Optional[str] = None
+    attrs: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class Control:
+    id: str
+    effectiveness: Dict[str, float]
+    bypass_conditions: List[str] = field(default_factory=list)
+
+@dataclass
+class Vulnerability:
+    id: str
+    node: str
+    type: str
+    base_success: float
+    post_actions: List[dict] = field(default_factory=list)
+
+@dataclass
+class Detector:
+    id: str
+    on: List[str]
+    where: Dict[str, Any]
+    detect_prob: float
+    emit: List[str]
+
+@dataclass
+class Response:
+    id: str
+    when: str
+    actions: List[dict]
+
+@dataclass
+class Actor:
+    id: str
+    role: str
+    capabilities: List[str] = field(default_factory=list)
+================================================================================
+
+--- FILE: archfinn\core\runtime.py ---
+# archfinn/core/runtime.py
+import random
+from typing import Any, Dict, List
+from dataclasses import dataclass, field
+
+@dataclass
+class EventBus:
+    events: List[str] = field(default_factory=list)
+    
+    def emit(self, event: str):
+        self.events.append(event)
+
+@dataclass
+class SimulationContext:
+    clock: int = 0
+    rng: random.Random = field(default_factory=lambda: random.Random(1337))
+    event_bus: EventBus = field(default_factory=EventBus)
+    facts: Dict[str, Any] = field(default_factory=dict)
+    logs: List[str] = field(default_factory=list)
+
+    def log(self, msg: str):
+        self.logs.append(f"[t={self.clock}] {msg}")
+================================================================================
+
+--- FILE: archfinn\parser\ast.py ---
+# archfinn/parser/ast.py
+from dataclasses import dataclass, field
+from typing import List, Dict, Any, Optional
+
+@dataclass
+class Node:
+    id: str
+    type: str
+    state: str
+    controls: List[str] = field(default_factory=list)
+    attrs: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class Edge:
+    from_id: str
+    to_id: str
+    protocol: Optional[str] = None
+    attrs: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class Control:
+    id: str
+    effectiveness: Dict[str, float]
+    bypass_conditions: List[str] = field(default_factory=list)
+
+@dataclass
+class ScenarioStep:
+    id: str
+    action: str
+    params: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class Scenario:
+    name: str
+    steps: List[ScenarioStep]
+    timeline: Dict[str, Any] = field(default_factory=dict)
+================================================================================
+
+--- FILE: archfinn\parser\grammar.py ---
+# archfinn/parser/grammar.py
+"""
+ArchFinn Script Grammar - FIXED TERMINALS
+"""
+
+GRAMMAR = r'''
+    ?start: archfinn_header meta? structure? behavior? (scenario | simulation)+
+
+    archfinn_header: "ARCHFINN" STRING
+
+    meta: "META" "{" meta_pair* "}"
+    meta_pair: IDENT "=" value
+
+    structure: "STRUCTURE" "{" (node_def | edge_def)* "}"
+    node_def: "NODE" IDENT "{" node_prop* "}"
+    node_prop: "type" "=" IDENT
+             | "state" "=" state_enum
+             | "controls" "=" "[" IDENT ("," IDENT)* "]"
+             | "attrs" "{" attr_pair* "}"
+
+    attr_pair: IDENT "=" value
+
+    edge_def: "EDGE" IDENT "->" IDENT ("[" edge_prop* "]")?
+    edge_prop: IDENT "=" value
+
+    behavior: "BEHAVIOR" "{" (control_def | vuln_def | detector_def | response_def | actor_def)* "}"
+
+    control_def: "CONTROL" IDENT "{" "effectiveness" "=" "{" IDENT "=" NUMBER ("," IDENT "=" NUMBER)* "}" ("bypass_conditions" "=" "[" IDENT ("," IDENT)* "]")? "}"
+    vuln_def: "VULN" IDENT "{" "node" "=" IDENT "," "type" "=" IDENT "," "base_success" "=" NUMBER ("post" "=" "{" action_list "}")? "}"
+    detector_def: "DETECTOR" IDENT "{" "on" "=" "[" IDENT ("," IDENT)* "]" ("," "where" "=" "{" IDENT "=" value ("," IDENT "=" value)* "}")? "," "detect_prob" "=" NUMBER "," "emit" "=" "[" STRING ("," STRING)* "]" "}"
+    response_def: "RESPONSE" IDENT "{" "when" "=" STRING "," "actions" "=" "{" action_list "}" "}"
+    actor_def: "ACTOR" IDENT "{" "role" "=" IDENT ("," "capabilities" "=" "[" IDENT ("," IDENT)* "]")? "}"
+
+    // Support both SCENARIO and SIMULATION
+    scenario: "SCENARIO" STRING "{" scenario_body "}"
+    simulation: "SIMULATION" STRING "{" scenario_body "}"
+    
+    scenario_body: (timeline? step*)
+    timeline: "timeline" "=" "{" timeline_pairs "}"
+    timeline_pairs: IDENT "=" value ("," IDENT "=" value)*
+
+    // Fixed step definition - include ALL possible properties
+    step: "STEP" IDENT "{" (action_prop | attacker_prop | target_prop | type_prop 
+        | base_success_prop | on_success_prop | on_fail_prop | from_prop 
+        | to_prop | method_prop | rate_prop | detect_prob_prop 
+        | on_detect_prop | next_prop)* "}"
+    
+    step_prop: action_prop
+             | attacker_prop
+             | target_prop
+             | type_prop
+             | base_success_prop
+             | on_success_prop
+             | on_fail_prop
+             | from_prop
+             | to_prop
+             | method_prop
+             | rate_prop
+             | detect_prob_prop
+             | on_detect_prop
+             | next_prop
+             | data_volume_prop
+
+    // --- Step properties ---
+    action_prop: "action" "=" value
+    attacker_prop: "attacker" "=" value
+    target_prop: "target" "=" value
+    type_prop: "type" "=" value
+    base_success_prop: "base_success" "=" NUMBER
+    on_success_prop: "on_success" "=" jump_target
+    on_fail_prop: "on_fail" "=" jump_target
+    from_prop: "from" "=" value
+    to_prop: "to" "=" value
+    method_prop: "method" "=" value
+    rate_prop: "rate" "=" value
+    detect_prob_prop: "detect_prob" "=" NUMBER
+    on_detect_prop: "on_detect" "=" jump_target
+    next_prop: "next" "=" jump_target
+    data_volume_prop: "data_volume" "=" NUMBER
+
+    // Simplified jump targets
+    jump_target: "goto" ":" IDENT -> make_goto
+               | "end" ":" IDENT -> make_end
+
+    state_enum: "secure" | "vulnerable" | "compromised" | "contained" | "offline"
+
+    action_list: change_state_action | emit_action | action_list "," (change_state_action | emit_action)
+    change_state_action: "change_state" "(" IDENT "," IDENT ")"
+    emit_action: "emit" "(" STRING ")"
+
+    value: STRING | NUMBER | IDENT | "[" value ("," value)* "]"
+
+    // === TERMINALS - NO KEYWORD CONFLICTS ===
+    IDENT: /[a-zA-Z_][a-zA-Z0-9_-]*/
+    STRING: /"[^"]*"/
+    NUMBER: /\d+\.?\d*/
+
+    %import common.WS
+    %ignore WS
+    %ignore /#.*$/
+'''
+================================================================================
+
+--- FILE: archfinn\parser\lexer.py ---
+# archfinn/parser/lexer.py
+from lark import Lark, Token
+
+def custom_lexer(data: str):
+    tokens = []
+    for line in data.splitlines():
+        if line.strip() and not line.strip().startswith('#'):
+            # Token hóa đơn giản – chỉ để minh họa
+            tokens.append(Token('LINE', line))
+    return tokens
+================================================================================
+
+--- FILE: archfinn\parser\parser.py ---
+# archfinn/parser/parser.py
+from lark import Lark, Transformer
+from .ast import Node, Edge, Control, ScenarioStep, Scenario
+from .grammar import GRAMMAR
+
+
+def parse_file(file_path):
+    """Parse .afinn file và trả về AST."""
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return parser.parse(content)
+
+
+class AfinnTransformer(Transformer):
+    def STRING(self, tok):
+        return str(tok)[1:-1]  # bỏ dấu ngoặc kép
+
+    def IDENT(self, tok):
+        return str(tok)
+
+    def NUMBER(self, tok):
+        val = str(tok)
+        return int(val) if '.' not in val else float(val)
+
+    # --- META ---
+    def meta_pair(self, args):
+        key = args[0]
+        value = args[1]
+        return (key, value)
+
+    def meta(self, args):
+        return dict(args)
+
+    # --- ATTRS ---
+    def attr_pair(self, args):
+        key = args[0]
+        value = args[1]
+        return (key, value)
+
+    def value(self, args):
+        if len(args) == 1:
+            return args[0]
+        return list(args)
+
+    # --- NODE ---
+    def node_def(self, args):
+        name = args[0]
+        props = {
+            'id': name,
+            'type': 'unknown',
+            'state': 'secure',
+            'controls': [],
+            'attrs': {}
+        }
+        for item in args[1:]:
+            if isinstance(item, tuple) and len(item) == 2:
+                k, v = item
+                props[k] = v
+        return Node(**props)
+
+    # --- EDGE ---
+    def edge_def(self, args):
+        src, dst = args[0], args[1]
+        return Edge(from_id=src, to_id=dst)
+
+    # --- CONTROL ---
+    def control_def(self, args):
+        name = args[0]
+        effectiveness = {}
+        bypass_conditions = []
+        for child in args[1:]:
+            if isinstance(child, dict):
+                effectiveness = child
+            elif isinstance(child, list):
+                bypass_conditions = child
+        return Control(id=name, effectiveness=effectiveness, bypass_conditions=bypass_conditions)
+
+    # --- SCENARIO/SIMULATION PROPERTIES ---
+    def action_prop(self, args):
+        return ("action", args[0])
+
+    def attacker_prop(self, args):
+        return ("attacker", args[0])
+
+    def target_prop(self, args):
+        return ("target", args[0])
+
+    def type_prop(self, args):
+        return ("type", args[0])
+
+    def base_success_prop(self, args):
+        return ("base_success", args[0])
+
+    def on_success_prop(self, args):
+        return ("on_success", args[0])
+
+    def on_fail_prop(self, args):
+        return ("on_fail", args[0])
+
+    def from_prop(self, args):
+        return ("from", args[0])
+
+    def to_prop(self, args):
+        return ("to", args[0])
+
+    def method_prop(self, args):
+        return ("method", args[0])
+
+    def rate_prop(self, args):
+        return ("rate", args[0])
+
+    def detect_prob_prop(self, args):
+        return ("detect_prob", args[0])
+
+    def on_detect_prop(self, args):
+        return ("on_detect", args[0])
+
+    def next_prop(self, args):
+        return ("next", args[0])
+
+    def data_volume_prop(self, args):
+        return ("data_volume", args[0])
+
+    def make_goto(self, args):
+        # args là [IDENT] - label sau "goto:"
+        return ("goto", str(args[0]))
+
+    def make_end(self, args):
+        # args là [IDENT] - label sau "end:"
+        return ("end", str(args[0]))
+
+    # --- TIMELINE ---
+    def timeline_pairs(self, args):
+        result = {}
+        i = 0
+        while i < len(args) - 1:
+            result[args[i]] = args[i + 1]
+            i += 2
+        return result
+
+    def timeline(self, args):
+        return args[0] if args else {}
+
+    # --- STEP ---
+    def step(self, args):
+        step_id = args[0]
+        params = {}
+        action = None
+        
+        for item in args[1:]:
+            if isinstance(item, tuple) and len(item) == 2:
+                k, v = item
+                if k == 'action':
+                    action = v
+                else:
+                    params[k] = v
+        
+        if action is None:
+            raise ValueError(f"Step {step_id} missing 'action' property")
+        
+        return ScenarioStep(id=step_id, action=action, params=params)
+
+    # --- SCENARIO BODY ---
+    def scenario_body(self, args):
+        timeline = {}
+        steps = []
+        
+        for item in args:
+            if isinstance(item, dict):
+                timeline.update(item)
+            elif isinstance(item, ScenarioStep):
+                steps.append(item)
+        
+        return (timeline, steps)
+
+    # --- SCENARIO/SIMULATION ---
+    def scenario(self, args):
+        name = args[0]
+        timeline, steps = args[1]
+        return Scenario(name=name, steps=steps, timeline=timeline)
+
+    def simulation(self, args):
+        name = args[0]
+        timeline, steps = args[1]
+        # Simulation cũng được xử lý như Scenario
+        return Scenario(name=name, steps=steps, timeline=timeline)
+
+    def start(self, args):
+        scenarios = []
+        for item in args:
+            if isinstance(item, Scenario):
+                scenarios.append(item)
+        return scenarios if len(scenarios) > 1 else (scenarios[0] if scenarios else None)
+
+
+# ✅ Khởi tạo parser với error handling tốt hơn
+parser = Lark(GRAMMAR, parser='lalr', transformer=AfinnTransformer(), keep_all_tokens=False)
+================================================================================
+
+--- FILE: archfinn\sdk\api.py ---
+# archfinn/sdk/api.py
+from pathlib import Path
+from typing import Dict, Any
+from ..parser.parser import parser
+from ..core.engine import ArchState, run_scenario
+
+
+def load(file_path: str) -> Dict[str, Any]:
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Không tìm thấy file: {file_path}")
+    
+    with open(path, 'r', encoding='utf-8') as f:
+        source = f.read()
+    
+    tree = parser.parse(source)
+    return {"ast": tree, "source": source, "path": path}
+
+
+def run(file_path: str, scenario_name: str = None) -> Dict[str, Any]:
+    data = load(file_path)
+    ast = data["ast"]
+
+    # Hỗ trợ AST là list hoặc single scenario
+    scenarios = ast if isinstance(ast, list) else [ast]
+    scenario = None
+
+    for item in scenarios:
+        if hasattr(item, "name") and (scenario_name is None or item.name == scenario_name):
+            scenario = item
+            break
+
+    if scenario is None:
+        raise ValueError(f"Không tìm thấy scenario: {scenario_name}")
+
+    state = ArchState(nodes={}, edges=[], controls={})
+    result = run_scenario(state, scenario)
+    return result
+
+
+def export(file_path: str, format: str = "json") -> Any:
+    data = load(file_path)
+    if format == "json":
+        import json
+        return json.dumps({"model": str(data['ast'])}, indent=2, ensure_ascii=False)
+    return data
+================================================================================
+
+--- FILE: archfinn\stdlib\cloud\controls.afinn ---
+ARCHFINN "Demo"
+
+META {
+    author = "me"
+    version = "0.1"
+    tags = [ "test", "demo" ]
+}
+
+SCENARIO Demo {
+    STEP S1 {
+        action = exploit
+        target = server1
+        type = "CVE-2024"
+        base_success = 0.7
+        on_success = goto:S2
+        on_fail = end:failed
+    }
+    STEP S2 {
+        action = move_lateral
+        from = server1
+        to = server2
+        type = weak_password
+        base_success = 0.5
+        on_success = end:pwned
+        on_fail = end:movement_failed
+    }
+}
+================================================================================
+
+--- FILE: archfinn\utils\graph.py ---
+
+================================================================================
+
+--- FILE: archfinn_engine.egg-info\dependency_links.txt ---
+
+
+================================================================================
+
+--- FILE: archfinn_engine.egg-info\entry_points.txt ---
+[console_scripts]
+archfinn = archfinn.cli.main:main
+
+================================================================================
+
+--- FILE: archfinn_engine.egg-info\requires.txt ---
+lark
+networkx
+numpy
+pandas
+fastapi
+streamlit
+
+================================================================================
+
+--- FILE: archfinn_engine.egg-info\SOURCES.txt ---
+README.md
+pyproject.toml
+archfinn/__init__.py
+archfinn/cli/main.py
+archfinn/core/engine.py
+archfinn/core/model.py
+archfinn/core/runtime.py
+archfinn/parser/ast.py
+archfinn/parser/grammar.py
+archfinn/parser/lexer.py
+archfinn/parser/parser.py
+archfinn/sdk/api.py
+archfinn/utils/graph.py
+archfinn_engine.egg-info/PKG-INFO
+archfinn_engine.egg-info/SOURCES.txt
+archfinn_engine.egg-info/dependency_links.txt
+archfinn_engine.egg-info/entry_points.txt
+archfinn_engine.egg-info/requires.txt
+archfinn_engine.egg-info/top_level.txt
+================================================================================
+
+--- FILE: archfinn_engine.egg-info\top_level.txt ---
+archfinn
+
+================================================================================
+
+--- FILE: examples\demo.afinn ---
+ARCHFINN "v1.0"
+
+SIMULATION "Test Attack Path" {
+    timeline = {
+        max_steps = 10,
+        tick_delay = 1.0
+    }
+
+    STEP S1 {
+        action = exploit
+        target = webserver
+        type = sql_injection
+        base_success = 0.6
+        on_success = goto:S2
+        on_fail = end:blocked
+    }
+
+    STEP S2 {
+        action = move_lateral
+        from = webserver
+        to = dbserver
+        type = ssh
+        base_success = 0.4
+        on_success = goto:S3
+        on_fail = end:stopped
+    }
+
+    STEP S3 {
+        action = exfiltrate
+        detect_prob = 0.5
+        data_volume = 500
+        on_success = end:exfil_success
+        on_detect = end:alert_triggered
+    }
+}
+================================================================================
+

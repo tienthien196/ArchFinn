@@ -1,0 +1,40 @@
+SCENARIO "Multi-step Attack Simulation" {
+    max_steps = 8
+    tick_delay = 1.0
+
+    STEP S1 {
+        action = exploit
+        attacker = hacker
+        target = webserver
+        method = sql_injection
+        base_success = 0.7
+        next = S2
+    }
+
+    STEP S2 {
+        action = lateral_movement
+        attacker = hacker
+        target = dbserver
+        method = stolen_credentials
+        base_success = 0.5
+        on_fail = S2_retry
+        next = S3
+    }
+
+    STEP S2_retry {
+        action = brute_force
+        attacker = hacker
+        target = dbserver
+        method = password_guess
+        base_success = 0.3
+        next = S3
+    }
+
+    STEP S3 {
+        action = exfiltration
+        attacker = hacker
+        target = dbserver
+        data_volume = 1000   // MB
+        base_success = 0.8
+    }
+}

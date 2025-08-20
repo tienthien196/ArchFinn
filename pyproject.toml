@@ -1,0 +1,23 @@
+# pyproject.toml
+[build-system]
+requires = ["setuptools", "wheel", "lark"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "archfinn-engine"
+version = "0.1.0"
+description = "ArchFinn Script Engine - Mô phỏng mọi kiến trúc"
+authors = [{name = "ArchFinn Team"}]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "lark",
+    "networkx",
+    "numpy",
+    "pandas",
+    "fastapi",
+    "streamlit"
+]
+
+[project.scripts]
+archfinn = "archfinn.cli.main:main"

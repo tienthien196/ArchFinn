@@ -1,0 +1,27 @@
+ARCHFINN "Demo"
+
+META {
+    author = "me"
+    version = "0.1"
+    tags = [ "test", "demo" ]
+}
+
+SCENARIO Demo {
+    STEP S1 {
+        action = exploit
+        target = server1
+        type = "CVE-2024"
+        base_success = 0.7
+        on_success = goto:S2
+        on_fail = end:failed
+    }
+    STEP S2 {
+        action = move_lateral
+        from = server1
+        to = server2
+        type = weak_password
+        base_success = 0.5
+        on_success = end:pwned
+        on_fail = end:movement_failed
+    }
+}
