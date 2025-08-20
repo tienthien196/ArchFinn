@@ -410,5 +410,3 @@ Hiện repo **chưa có** file `LICENSE`. Để mở nguồn hoàn toàn, bạn 
 
 > *Tài liệu này có thể dùng làm README.md cho repo. Nếu cần mình xuất bản bản tiếng Anh/đa ngôn ngữ, hoặc sinh tự động từ nội dung hiện tại, hãy ping mình.*
 
-#   A r c h F i n n  
- 
